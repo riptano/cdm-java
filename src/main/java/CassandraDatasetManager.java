@@ -1,4 +1,5 @@
 import com.datastax.driver.core.Cluster;
+import org.apache.commons.cli.*;
 import org.eclipse.jgit.api.Git;
 import org.apache.commons.io.FileUtils;
 
@@ -15,7 +16,7 @@ public class CassandraDatasetManager {
 
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm/master/datasets.yaml";
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, ParseException {
         System.out.println("Hello world!");
 
         // check for the .cdm directory
@@ -36,6 +37,10 @@ public class CassandraDatasetManager {
         }
 
         // parse the CLI options
+        Options options = new Options();
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = parser.parse( options, args);
 
 
         // create a cluster and session
