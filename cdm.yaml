@@ -2,3 +2,4 @@ keyspace: cdmtest
 tables:
     - users
     - collection
+version: 2.2

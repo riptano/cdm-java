@@ -80,17 +80,26 @@ public class CassandraDatasetManager {
         System.out.println("Finished.");
     }
 
-    void install(String name) {
+    void install(String name) throws IOException {
         // for now i'm using local
         String path = System.getProperty("user.dir");
         System.out.println(path);
 
+        // all the paths
+        String schema = path + "/schema.cql";
+        String dataPath = path + "/data/";
+        String config = path + "/cdm.yaml";
+        File configFile =  new File(config);
+
         // load the yaml
+
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+        Config data = mapper.readValue(configFile, Config.class);
+
         // lets use the test keyspace for now
         // TODO use real keyspace like a champion
 
-        String schema = path + "/schema.cql";
-        String dataPath = path + "/data/";
 
         System.out.println("Schema: " + schema);
 
