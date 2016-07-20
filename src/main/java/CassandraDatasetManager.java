@@ -74,14 +74,30 @@ public class CassandraDatasetManager {
         // TODO: actually use the parsed options to install the requested dataset
         // for now i'm using the one included with CDM to test
         // load schema using cqlsh - should this use a normal CSV loader eventually?
-
+        cdm.install(".");
         // load data using cqlsh for now
 
         System.out.println("Finished.");
     }
 
     void install(String name) {
+        // for now i'm using local
+        String path = System.getProperty("user.dir");
+        System.out.println(path);
 
+        // load the yaml
+        // lets use the test keyspace for now
+        // TODO use real keyspace like a champion
+
+        String schema = path + "/schema.cql";
+        String dataPath = path + "/data/";
+
+        System.out.println("Schema: " + schema);
+
+        System.out.println("Loading schema");
+        String command = "cqlsh -f " + schema;
+
+        System.out.println("Loading data");
     }
 
 

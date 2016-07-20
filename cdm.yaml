@@ -1,0 +1,4 @@
+keyspace: cdmtest
+tables:
+    - users
+    - collection
