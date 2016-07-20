@@ -98,7 +98,8 @@ public class CassandraDatasetManager {
         Config config = mapper.readValue(configFile, Config.class);
 
         String createKeyspace = "cqlsh -e \"DROP KEYSPACE IF EXISTS " + config.keyspace +
-                                "; CREATE KEYSPACE " + config.keyspace + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"";
+                                "; CREATE KEYSPACE " + config.keyspace +
+                                " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"";
 
         System.out.println(createKeyspace);
         Runtime.getRuntime().exec(new String[]{"bash", "-c", createKeyspace}).waitFor();
