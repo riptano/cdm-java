@@ -26,7 +26,7 @@ public class CassandraDatasetManager {
     }
 
 
-    public static void main(String[] args) throws IOException, ParseException {
+    public static void main(String[] args) throws IOException, ParseException, InterruptedException {
         System.out.println("Hello world!");
 
         // check for the .cdm directory
@@ -80,7 +80,7 @@ public class CassandraDatasetManager {
         System.out.println("Finished.");
     }
 
-    void install(String name) throws IOException {
+    void install(String name) throws IOException, InterruptedException {
         // for now i'm using local
         String path = System.getProperty("user.dir");
         System.out.println(path);
@@ -88,17 +88,21 @@ public class CassandraDatasetManager {
         // all the paths
         String schema = path + "/schema.cql";
         String dataPath = path + "/data/";
-        String config = path + "/cdm.yaml";
-        File configFile =  new File(config);
+        String configLocation = path + "/cdm.yaml";
+        File configFile =  new File(configLocation);
 
         // load the yaml
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
-        Config data = mapper.readValue(configFile, Config.class);
+        Config config = mapper.readValue(configFile, Config.class);
 
         // lets use the test keyspace for now
         // TODO use real keyspace like a champion
+        String createKeyspace = "cqlsh -e \"CREATE KEYSPACE " + config.keyspace + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"";
+
+        System.out.println(createKeyspace);
+        Runtime.getRuntime().exec(createKeyspace).waitFor();
 
 
         System.out.println("Schema: " + schema);
