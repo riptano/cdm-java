@@ -97,15 +97,16 @@ public class CassandraDatasetManager {
 
         Config config = mapper.readValue(configFile, Config.class);
 
-        // lets use the test keyspace for now
-        // TODO use real keyspace like a champion
-        String createKeyspace = "cqlsh -e \"CREATE KEYSPACE " + config.keyspace + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"";
+        String createKeyspace = "cqlsh -e \"DROP KEYSPACE IF EXISTS " + config.keyspace +
+                                "; CREATE KEYSPACE " + config.keyspace + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"";
 
         System.out.println(createKeyspace);
-        Runtime.getRuntime().exec(createKeyspace).waitFor();
+        Runtime.getRuntime().exec(new String[]{"bash", "-c", createKeyspace}).waitFor();
 
 
         System.out.println("Schema: " + schema);
+        String loadSchema = "cqlsh -k " + config.keyspace + " -f " + schema;
+        Runtime.getRuntime().exec(new String[]{"bash", "-c", loadSchema}).waitFor();
 
         System.out.println("Loading schema");
         String command = "cqlsh -f " + schema;
