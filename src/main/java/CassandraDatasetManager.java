@@ -17,10 +17,12 @@ import java.util.Map;
 public class CassandraDatasetManager {
 
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm/master/datasets.yaml";
+    private final Session session;
     private Map<String, Dataset> datasets;
 
-    CassandraDatasetManager(Map<String, Dataset> datasets) {
+    CassandraDatasetManager(Map<String, Dataset> datasets, Session session) {
         this.datasets = datasets;
+        this.session = session;
     }
 
 
@@ -50,14 +52,16 @@ public class CassandraDatasetManager {
 
         Map<String, Dataset> data = mapper.readValue(yaml, Map.class);
 
-        CassandraDatasetManager cass = new CassandraDatasetManager(data);
+        Cluster cluster = Cluster.builder()
+                .addContactPoint("127.0.0.1").build();
+
+        Session session = cluster.newSession();
 
         // debug: show all datasets no matter what
-        System.out.println("Datasets: ");
+        CassandraDatasetManager cdm = new CassandraDatasetManager(data, session);
+        cdm.list();
 
-        for(Map.Entry<String, Dataset> dataset : data.entrySet()) {
-            System.out.println(dataset.getKey());
-        }
+
 
         // parse the CLI options
         Options options = new Options();
@@ -67,12 +71,11 @@ public class CassandraDatasetManager {
 
         // create a cluster and session
 
-        Cluster cluster = Cluster.builder()
-                .addContactPoint("127.0.0.1").build();
+        // TODO: actually use the parsed options to install the requested dataset
+        // for now i'm using the one included with CDM to test
+        // load schema using cqlsh - should this use a normal CSV loader eventually?
 
-        Session session = cluster.newSession();
-
-
+        // load data using cqlsh for now
 
         System.out.println("Finished.");
     }
@@ -80,11 +83,18 @@ public class CassandraDatasetManager {
     void install(String name) {
 
     }
+
+
     void update() {
 
     }
 
     void list() {
+        System.out.println("Datasets: ");
+
+        for(Map.Entry<String, Dataset> dataset : datasets.entrySet()) {
+            System.out.println(dataset.getKey());
+        }
 
     }
 }
