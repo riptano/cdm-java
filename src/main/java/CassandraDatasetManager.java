@@ -42,7 +42,7 @@ public class CassandraDatasetManager {
         f.mkdir();
 
         // check for the YAML file
-        File yaml = new File(cdm_path + "/cdm.yaml");
+        File yaml = new File(cdm_path + "/datasets.yaml");
         if (!yaml.exists()) {
             URL y = new URL(YAML_URI);
             FileUtils.copyURLToFile(y, yaml);
