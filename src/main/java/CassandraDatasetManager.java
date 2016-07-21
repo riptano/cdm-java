@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class CassandraDatasetManager {
 
-    private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm/master/datasets.yaml";
+    private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
     private final Session session;
     private Map<String, Dataset> datasets;
 
@@ -27,7 +27,9 @@ public class CassandraDatasetManager {
 
 
     public static void main(String[] args) throws IOException, ParseException, InterruptedException {
-        System.out.println("Hello world!");
+        System.out.println("Starting CDM");
+
+
 
         // check for the .cdm directory
         String home_dir = System.getProperty("user.home");
