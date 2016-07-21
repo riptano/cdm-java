@@ -1,3 +1,5 @@
+package com.datastax.cdm;
+
 /**
  * Created by jhaddad on 7/8/16.
  */

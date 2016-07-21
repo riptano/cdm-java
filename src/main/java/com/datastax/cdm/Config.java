@@ -1,3 +1,5 @@
+package com.datastax.cdm;
+
 import java.util.List;
 
 /**
