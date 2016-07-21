@@ -109,8 +109,16 @@ public class CassandraDatasetManager {
         String loadSchema = "cqlsh -k " + config.keyspace + " -f " + schema;
         Runtime.getRuntime().exec(new String[]{"bash", "-c", loadSchema}).waitFor();
 
-        System.out.println("Loading schema");
-        String command = "cqlsh -f " + schema;
+        System.out.println("Loading data");
+
+        for(String table: config.tables) {
+            String dataFile = dataPath + table + ".csv";
+            String command = "COPY " + table + " FROM " + "'" + dataFile + "'";
+            String loadData= "cqlsh -k " + config.keyspace + " -e \"" + command + "\"";
+            System.out.println(loadData);
+            Runtime.getRuntime().exec(new String[]{"bash", "-c", loadData}).waitFor();
+        }
+
 
         System.out.println("Loading data");
     }
