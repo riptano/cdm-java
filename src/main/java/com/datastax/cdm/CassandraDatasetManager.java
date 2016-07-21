@@ -2,6 +2,7 @@ package com.datastax.cdm;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.*;
@@ -52,7 +53,8 @@ public class CassandraDatasetManager {
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
-        Map<String, Dataset> data = mapper.readValue(yaml, Map.class);
+        // why extra work? Java Type Erasure will prevent type detection otherwise
+        Map<String, Dataset> data = mapper.readValue(yaml, new TypeReference<Map<String, Dataset>>() {} );
 
         Cluster cluster = Cluster.builder()
                 .addContactPoint("127.0.0.1").build();
@@ -80,7 +82,7 @@ public class CassandraDatasetManager {
             cdm.printHelp();
             return;
         }
-        
+
         if(args[0].equals("install")) {
             cdm.install(args[1]);
         } else {
@@ -102,7 +104,7 @@ public class CassandraDatasetManager {
 
         // we're dealing with a request to install a remote dataset
         if(!name.equals(".")) {
-//            Dataset dataset = datasets.get(name);
+            Dataset dataset = datasets.get(name);
             // pull the repo down
             String repoLocation = cdmDir + name;
             System.out.println("Checking for repo at " + repoLocation);
