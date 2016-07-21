@@ -76,6 +76,11 @@ public class CassandraDatasetManager {
         // TODO: actually use the parsed options to install the requested dataset
         // for now i'm using the one included with CDM to test
         // load schema using cqlsh - should this use a normal CSV loader eventually?
+        if(args.length == 0) {
+            cdm.printHelp();
+            return;
+        }
+        
         if(args[0].equals("install")) {
             cdm.install(args[1]);
         } else {
@@ -159,5 +164,8 @@ public class CassandraDatasetManager {
             System.out.println(dataset.getKey());
         }
 
+    }
+    void printHelp() {
+        System.out.println("Put help here.");
     }
 }
