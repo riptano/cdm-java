@@ -29,8 +29,6 @@ public class CassandraDatasetManager {
     public static void main(String[] args) throws IOException, ParseException, InterruptedException {
         System.out.println("Starting CDM");
 
-
-
         // check for the .cdm directory
         String home_dir = System.getProperty("user.home");
         System.out.println(home_dir);
@@ -76,7 +74,12 @@ public class CassandraDatasetManager {
         // TODO: actually use the parsed options to install the requested dataset
         // for now i'm using the one included with CDM to test
         // load schema using cqlsh - should this use a normal CSV loader eventually?
-        cdm.install(".");
+        if(args[0].equals("install")) {
+            cdm.install(args[1]);
+        } else {
+            System.out.println("Not sure what to do.");
+        }
+
         // load data using cqlsh for now
 
         System.out.println("Finished.");
@@ -84,8 +87,25 @@ public class CassandraDatasetManager {
 
     void install(String name) throws IOException, InterruptedException {
         // for now i'm using local
+        System.out.println("Installing " + name);
         String path = System.getProperty("user.dir");
         System.out.println(path);
+
+        String cdmDir = System.getProperty("user.home") + "/.cdm/";
+
+        // we're dealing with a request to install a remote dataset
+        if(!name.equals(".")) {
+//            Dataset dataset = datasets.get(name);
+            // pull the repo down
+            String repoLocation = cdmDir + name;
+            System.out.println("Checking for repo at " + repoLocation);
+            // if the repo doesn't exist, clone it
+            File f = new File(repoLocation);
+            if(!f.exists()) {
+//                System.out.println("Cloning " + dataset.url);
+            }
+
+        }
 
         // all the paths
         String schema = path + "/schema.cql";
