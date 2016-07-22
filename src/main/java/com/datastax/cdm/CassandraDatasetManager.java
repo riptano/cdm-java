@@ -34,11 +34,11 @@ public class CassandraDatasetManager {
 
         // check for the .cdm directory
         String home_dir = System.getProperty("user.home");
-        System.out.println(home_dir);
+//        System.out.println(home_dir);
         String cdm_path = home_dir + "/.cdm";
 
         File f = new File(cdm_path);
-        System.out.println(f);
+//        System.out.println(f);
 
         f.mkdir();
 
@@ -49,7 +49,7 @@ public class CassandraDatasetManager {
             FileUtils.copyURLToFile(y, yaml);
         }
         // read in the YAML dataset list
-        System.out.println("Loading YAML");
+//        System.out.println("Loading Configuration YAML");
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
@@ -58,7 +58,7 @@ public class CassandraDatasetManager {
 
         // debug: show all datasets no matter what
         CassandraDatasetManager cdm = new CassandraDatasetManager(data);
-        cdm.list();
+
 
         // parse the CLI options
         Options options = new Options();
@@ -78,7 +78,10 @@ public class CassandraDatasetManager {
 
         if(args[0].equals("install")) {
             cdm.install(args[1]);
-        } else {
+        } else if (args[0].equals("list")) {
+            cdm.list();
+        }
+        else {
             System.out.println("Not sure what to do.");
         }
 

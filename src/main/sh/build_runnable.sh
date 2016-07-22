@@ -1,5 +1,6 @@
 #!/bin/sh
 
+rm -rf target/*jar-with-dependencies.jar
 mvn -e package
 
 mkdir bin
