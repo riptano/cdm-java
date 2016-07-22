@@ -1,7 +1,5 @@
 package com.datastax.cdm;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -20,12 +18,10 @@ import java.util.Map;
 public class CassandraDatasetManager {
 
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
-    private final Session session;
     private Map<String, Dataset> datasets;
 
-    CassandraDatasetManager(Map<String, Dataset> datasets, Session session) {
+    CassandraDatasetManager(Map<String, Dataset> datasets) {
         this.datasets = datasets;
-        this.session = session;
     }
 
 
@@ -56,13 +52,8 @@ public class CassandraDatasetManager {
         // why extra work? Java Type Erasure will prevent type detection otherwise
         Map<String, Dataset> data = mapper.readValue(yaml, new TypeReference<Map<String, Dataset>>() {} );
 
-        Cluster cluster = Cluster.builder()
-                .addContactPoint("127.0.0.1").build();
-
-        Session session = cluster.newSession();
-
         // debug: show all datasets no matter what
-        CassandraDatasetManager cdm = new CassandraDatasetManager(data, session);
+        CassandraDatasetManager cdm = new CassandraDatasetManager(data);
         cdm.list();
 
 
