@@ -33,7 +33,7 @@ public class CassandraDatasetManager {
     }
 
 
-    public static void main(String[] args) throws IOException, ParseException, InterruptedException {
+    public static void main(String[] args) throws IOException, ParseException, InterruptedException, GitAPIException {
         System.out.println("Starting CDM");
 
         // check for the .cdm directory
@@ -96,7 +96,7 @@ public class CassandraDatasetManager {
         System.out.println("Finished.");
     }
 
-    void install(String name) throws IOException, InterruptedException {
+    void install(String name) throws IOException, InterruptedException, GitAPIException {
         // for now i'm using local
         System.out.println("Installing " + name);
 
@@ -149,7 +149,7 @@ public class CassandraDatasetManager {
                 // pull the latest
                 System.out.println("Pulling latest");
                 Git repo = Git.open(f);
-                repo.pull();
+                repo.pull().call();
             }
         }
         System.out.println("CDM is using dataset path: " + path);
