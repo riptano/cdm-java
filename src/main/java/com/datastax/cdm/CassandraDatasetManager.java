@@ -7,6 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRemoteException;
+import org.eclipse.jgit.api.errors.TransportException;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,8 +69,6 @@ public class CassandraDatasetManager {
         CassandraDatasetManager cdm = new CassandraDatasetManager(data, session);
         cdm.list();
 
-
-
         // parse the CLI options
         Options options = new Options();
 
@@ -97,29 +99,66 @@ public class CassandraDatasetManager {
     void install(String name) throws IOException, InterruptedException {
         // for now i'm using local
         System.out.println("Installing " + name);
-        String path = System.getProperty("user.dir");
-        System.out.println(path);
+
 
         String cdmDir = System.getProperty("user.home") + "/.cdm/";
 
-        // we're dealing with a request to install a remote dataset
-        if(!name.equals(".")) {
+        String schema;
+        String dataPath;
+        String configLocation;
+        String path;
+
+        // temp variables that need to change depending on the dataset
+
+        // we're dealing with a request to install a local dataset
+        if(name.equals(".")) {
+            path = System.getProperty("user.dir");
+            // do nothing here
+        } else {
             Dataset dataset = datasets.get(name);
             // pull the repo down
             String repoLocation = cdmDir + name;
+            path = repoLocation;
+
             System.out.println("Checking for repo at " + repoLocation);
             // if the repo doesn't exist, clone it
             File f = new File(repoLocation);
-            if(!f.exists()) {
-//                System.out.println("Cloning " + dataset.url);
-            }
 
+            if(!f.exists()) {
+                System.out.println("Cloning " + dataset.url);
+                f.mkdir();
+
+                try {
+                    Git result = Git.cloneRepository()
+                            .setURI(dataset.url)
+                            .setDirectory(f)
+                            .call();
+                    System.out.println("Having repository: " + result.getRepository().getDirectory());
+                    // Note: the call() returns an opened repository
+                    // already which needs to be closed to avoid file handle leaks!
+                }
+                 catch (InvalidRemoteException e) {
+                    e.printStackTrace();
+                } catch (TransportException e) {
+                    e.printStackTrace();
+                } catch (GitAPIException e) {
+                    e.printStackTrace();
+                }
+
+            } else {
+                // pull the latest
+                System.out.println("Pulling latest");
+                Git repo = Git.open(f);
+                repo.pull();
+            }
         }
+        System.out.println("CDM is using dataset path: " + path);
 
         // all the paths
-        String schema = path + "/schema.cql";
-        String dataPath = path + "/data/";
-        String configLocation = path + "/cdm.yaml";
+        dataPath = path + "/data/";
+        configLocation = path + "/cdm.yaml";
+        schema = path + "/schema.cql";
+
         File configFile =  new File(configLocation);
 
         // load the yaml
