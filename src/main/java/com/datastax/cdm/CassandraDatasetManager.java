@@ -10,8 +10,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.Map;
 
@@ -80,14 +79,31 @@ public class CassandraDatasetManager {
             cdm.install(args[1]);
         } else if (args[0].equals("list")) {
             cdm.list();
-        }
-        else {
+        } else if (args[0].equals("new")) {
+            cdm.new_dataset(args[1]);
+        } else {
             System.out.println("Not sure what to do.");
         }
 
         // load data using cqlsh for now
 
         System.out.println("Finished.");
+    }
+
+    private void new_dataset(String arg) throws FileNotFoundException, UnsupportedEncodingException {
+        System.out.println("Creating new dataset " + arg);
+        File f = new File(arg);
+        f.mkdir();
+        String conf = arg + "/" + "cdm.yaml";
+        PrintWriter config = new PrintWriter(conf, "UTF-8");
+        String sample_conf = "keyspace: " + arg + "\n" +
+                "tables:\n" +
+                "    - tablename\n" +
+                "version: 2.1";
+        config.println(sample_conf);
+        config.close();
+        File data_dir = new File(arg + "/data");
+        data_dir.mkdir();
     }
 
     void install(String name) throws IOException, InterruptedException, GitAPIException {
