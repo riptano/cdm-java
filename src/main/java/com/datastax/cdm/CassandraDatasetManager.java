@@ -84,7 +84,9 @@ public class CassandraDatasetManager {
             cdm.new_dataset(args[1]);
         } else if (args[0].equals("dump")) {
             cdm.dump();
-        } else  {
+        } else if (args[0].equals("update")) {
+            cdm.update();
+        } else {
             System.out.println("Not sure what to do.");
         }
 
@@ -221,6 +223,7 @@ public class CassandraDatasetManager {
 
 
     void update() throws IOException {
+        System.out.println("Updating datasets...");
         String home_dir = System.getProperty("user.home");
         String cdm_path = home_dir + "/.cdm";
 
