@@ -11,6 +11,7 @@ import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
@@ -81,13 +82,28 @@ public class CassandraDatasetManager {
             cdm.list();
         } else if (args[0].equals("new")) {
             cdm.new_dataset(args[1]);
-        } else {
+        } else if (args[0].equals("dump")) {
+            cdm.dump();
+        } else  {
             System.out.println("Not sure what to do.");
         }
 
         // load data using cqlsh for now
 
         System.out.println("Finished.");
+    }
+
+    private void dump() throws IOException, InterruptedException {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        Config config = mapper.readValue(new File("cdm.yaml"), Config.class);
+
+        for(String table: config.tables) {
+            String command = "cqlsh -k " + config.keyspace + " -e \"" +
+                    "COPY " + table + " TO 'data/" + table + ".csv'\"";
+            System.out.println(command);
+            Runtime.getRuntime().exec(new String[]{"bash", "-c", command}).waitFor();
+        }
+
     }
 
     private void new_dataset(String arg) throws FileNotFoundException, UnsupportedEncodingException {
@@ -204,8 +220,15 @@ public class CassandraDatasetManager {
     }
 
 
-    void update() {
+    void update() throws IOException {
+        String home_dir = System.getProperty("user.home");
+        String cdm_path = home_dir + "/.cdm";
 
+        File yaml = new File(cdm_path + "/datasets.yaml");
+        if (!yaml.exists()) {
+            URL y = new URL(YAML_URI);
+            FileUtils.copyURLToFile(y, yaml);
+        }
     }
 
     void list() {
