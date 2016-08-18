@@ -3,3 +3,13 @@ movielens:
   url: https://github.com/rustyrazorblade/movielens.git
   description: Small movielens dataset.  100k ratings, 1000 users, 1700 movies.
   maintainer: Jon Haddad
+
+killrvideo:
+  url: https://github.com/KillrVideo/killrvideo-data.git
+  description: Sample schmema for KillrVideo https://killrvideo.github.io
+  maintainer: Patrick McFadin
+
+killrweather:
+  url: https://github.com/killrweather/killrweather-data.git
+  description: Sample schmema for KillrWeather https://github.com/killrweather
+  maintainer: Patrick McFadin
