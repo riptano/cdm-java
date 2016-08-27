@@ -1,6 +1,5 @@
 package com.datastax.cdm;
 
-import com.datastax.loader.CqlDelimLoad;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -34,9 +33,6 @@ public class CassandraDatasetManager {
 
 
     public static void main(String[] args) throws IOException, ParseException, InterruptedException, GitAPIException {
-
-        // Just a test to see if we can load the cassandra-loader classes
-        CqlDelimLoadTask task = new CqlDelimLoadTask();
 
         System.out.println("Starting CDM");
 
