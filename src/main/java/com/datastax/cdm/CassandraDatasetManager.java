@@ -9,9 +9,9 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
+import java.lang.StringBuilder;
 
-
-import com.datastax.loader.CqlDelimLoadTask;
+//import com.datastax.loader.CqlDelimLoadTask;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -104,10 +104,17 @@ public class CassandraDatasetManager {
         Config config = mapper.readValue(new File("cdm.yaml"), Config.class);
 
         for(String table: config.tables) {
-            String command = "cqlsh -k " + config.keyspace + " -e \"" +
-                    "COPY " + table + " TO 'data/" + table + ".csv'\"";
+            StringBuilder command = new StringBuilder();
+            command.append("cqlsh -k ")
+                    .append(config.keyspace)
+                    .append(" -e \"")
+                    .append("COPY ")
+                    .append(table)
+                    .append(" TO 'data/")
+                    .append(table)
+                    .append(".csv'\"");
             System.out.println(command);
-            Runtime.getRuntime().exec(new String[]{"bash", "-c", command}).waitFor();
+            Runtime.getRuntime().exec(new String[]{"bash", "-c", command.toString()}).waitFor();
         }
 
     }
