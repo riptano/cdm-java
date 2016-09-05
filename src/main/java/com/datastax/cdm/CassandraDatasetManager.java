@@ -1,7 +1,6 @@
 package com.datastax.cdm;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -20,6 +19,7 @@ import java.lang.StringBuilder;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -229,28 +229,29 @@ public class CassandraDatasetManager {
         session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
         session.execute(createKeyspace.toString());
 
-//        Runtime.getRuntime().exec(new String[]{"bash", "-c", createKeyspace}).waitFor();
-
-
         System.out.println("Schema: " + schema);
         String loadSchema = "cqlsh -k " + config.keyspace + " -f " + schema;
         Runtime.getRuntime().exec(new String[]{"bash", "-c", loadSchema}).waitFor();
 
         System.out.println("Loading data");
 
+        Cluster cluster2 = Cluster.builder()
+                           .addContactPoint("127.0.0.1")
+                           .build();
+
         for(String table: config.tables) {
             String dataFile = dataPath + table + ".csv";
 
             Reader in = new FileReader(dataFile);
             Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(in);
+            KeyspaceMetadata keyspaceMetadata = cluster2.getMetadata()
+                                                        .getKeyspace(config.keyspace);
+            TableMetadata tableMetadata = keyspaceMetadata.getTable(table);
+//            PreparedStatement p = session.prepare();
             for(CSVRecord record: records) {
-
+                // generate a CQL statement
+                System.out.println("Blah");
             }
-
-//            String command = "COPY " + table + " FROM " + "'" + dataFile + "'";
-//            String loadData= "cqlsh -k " + config.keyspace + " -e \"" + command + "\"";
-//            System.out.println(loadData);
-//            Runtime.getRuntime().exec(new String[]{"bash", "-c", loadData}).waitFor();
         }
 
 
