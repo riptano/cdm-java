@@ -21,6 +21,7 @@ import java.lang.StringBuilder;
 //import com.datastax.loader.CqlDelimLoadTask;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
@@ -268,6 +269,12 @@ public class CassandraDatasetManager {
                     }
                     else if(t.equals("float")) {
                         insert.value(cm.getName(), new Float(record.get(i)));
+                    }
+                    else if(t.equals("decimal")) {
+                        insert.value(cm.getName(), new BigDecimal(record.get(i)));
+                    }
+                    else if(t.equals("map")) {
+                        insert.value(cm.getName(), new BigDecimal(record.get(i)));
                     }
                     else {
                         insert.value(cm.getName(), record.get(i));
