@@ -2,4 +2,5 @@ keyspace: cdmtest
 tables:
     - users
     - alltypes
+    - maptest
 version: 2.2

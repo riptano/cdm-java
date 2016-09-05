@@ -8,3 +8,9 @@ CREATE TABLE alltypes (
     num int,
     ts timeuuid
 );
+
+create table maptest (
+    id int,
+    m map<text, text>,
+    primary key (id)
+);
