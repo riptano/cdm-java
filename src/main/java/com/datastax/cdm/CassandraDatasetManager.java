@@ -1,5 +1,6 @@
 package com.datastax.cdm;
 
+import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -26,6 +27,7 @@ public class CassandraDatasetManager {
 
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
     private Map<String, Dataset> datasets;
+    private Session session;
 
     CassandraDatasetManager(Map<String, Dataset> datasets) {
         this.datasets = datasets;
@@ -79,6 +81,8 @@ public class CassandraDatasetManager {
             cdm.printHelp();
             return;
         }
+
+        // connect to the cluster via the driver
 
         if(args[0].equals("install")) {
             cdm.install(args[1]);
