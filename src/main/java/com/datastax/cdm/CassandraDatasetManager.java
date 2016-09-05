@@ -1,10 +1,13 @@
 package com.datastax.cdm;
 
+import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.*;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -110,13 +113,13 @@ public class CassandraDatasetManager {
         for(String table: config.tables) {
             StringBuilder command = new StringBuilder();
             command.append("cqlsh -k ")
-                    .append(config.keyspace)
-                    .append(" -e \"")
-                    .append("COPY ")
-                    .append(table)
-                    .append(" TO 'data/")
-                    .append(table)
-                    .append(".csv'\"");
+                   .append(config.keyspace)
+                   .append(" -e \"")
+                   .append("COPY ")
+                   .append(table)
+                   .append(" TO 'data/")
+                   .append(table)
+                   .append(".csv'\"");
             System.out.println(command);
             Runtime.getRuntime().exec(new String[]{"bash", "-c", command.toString()}).waitFor();
         }
@@ -210,12 +213,23 @@ public class CassandraDatasetManager {
 
         Config config = mapper.readValue(configFile, Config.class);
 
-        String createKeyspace = "cqlsh -e \"DROP KEYSPACE IF EXISTS " + config.keyspace +
-                                "; CREATE KEYSPACE " + config.keyspace +
-                                " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"";
+        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+        Session session = cluster.connect();
+
+//        String createKeyspace = "DROP KEYSPACE IF EXISTS " + config.keyspace +
+//                                "; CREATE KEYSPACE " + config.keyspace +
+//                                " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}";
+
+        StringBuilder createKeyspace = new StringBuilder();
+        createKeyspace.append(" CREATE KEYSPACE " )
+                      .append(config.keyspace)
+                      .append( " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
 
         System.out.println(createKeyspace);
-        Runtime.getRuntime().exec(new String[]{"bash", "-c", createKeyspace}).waitFor();
+        session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
+        session.execute(createKeyspace.toString());
+
+//        Runtime.getRuntime().exec(new String[]{"bash", "-c", createKeyspace}).waitFor();
 
 
         System.out.println("Schema: " + schema);
@@ -226,10 +240,17 @@ public class CassandraDatasetManager {
 
         for(String table: config.tables) {
             String dataFile = dataPath + table + ".csv";
-            String command = "COPY " + table + " FROM " + "'" + dataFile + "'";
-            String loadData= "cqlsh -k " + config.keyspace + " -e \"" + command + "\"";
-            System.out.println(loadData);
-            Runtime.getRuntime().exec(new String[]{"bash", "-c", loadData}).waitFor();
+
+            Reader in = new FileReader(dataFile);
+            Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(in);
+            for(CSVRecord record: records) {
+
+            }
+
+//            String command = "COPY " + table + " FROM " + "'" + dataFile + "'";
+//            String loadData= "cqlsh -k " + config.keyspace + " -e \"" + command + "\"";
+//            System.out.println(loadData);
+//            Runtime.getRuntime().exec(new String[]{"bash", "-c", loadData}).waitFor();
         }
 
 
