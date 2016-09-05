@@ -1,5 +1,5 @@
 keyspace: cdmtest
 tables:
     - users
-    - collection
+    - alltypes
 version: 2.2

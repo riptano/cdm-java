@@ -1,6 +1,8 @@
 package com.datastax.cdm;
 
 import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.Insert;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -12,6 +14,8 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
+
+import javax.management.Query;
 import java.lang.StringBuilder;
 
 //import com.datastax.loader.CqlDelimLoadTask;
@@ -244,13 +248,35 @@ public class CassandraDatasetManager {
 
             Reader in = new FileReader(dataFile);
             Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(in);
+            System.out.println("Importing " + table);
             KeyspaceMetadata keyspaceMetadata = cluster2.getMetadata()
                                                         .getKeyspace(config.keyspace);
             TableMetadata tableMetadata = keyspaceMetadata.getTable(table);
 //            PreparedStatement p = session.prepare();
+            List<ColumnMetadata> columns = tableMetadata.getColumns();
+
             for(CSVRecord record: records) {
                 // generate a CQL statement
-                System.out.println("Blah");
+                Insert insert = QueryBuilder.insertInto(tableMetadata);
+
+                int i = 0;
+                for(ColumnMetadata cm: columns) {
+                    String t = cm.getType().getName().toString().toLowerCase();
+                    System.out.println(t);
+                    if(t.equals("int")) {
+                        insert.value(cm.getName(), new Integer(record.get(i)));
+                    }
+                    else if(t.equals("float")) {
+                        insert.value(cm.getName(), new Float(record.get(i)));
+                    }
+                    else {
+                        insert.value(cm.getName(), record.get(i));
+                    }
+                    i++;
+                }
+                String query = insert.toString();
+                System.out.println(query);
+                session.execute(query);
             }
         }
 
