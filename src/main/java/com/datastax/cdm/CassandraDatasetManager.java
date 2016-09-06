@@ -280,6 +280,7 @@ public class CassandraDatasetManager {
                                          record,
                                          fieldlist,
                                          types);
+                System.out.println(cql);
                 session.execute(cql);
             }
         }
@@ -302,22 +303,32 @@ public class CassandraDatasetManager {
         HashSet needs_quotes = new HashSet();
         needs_quotes.add("text");
         needs_quotes.add("datetime");
-        needs_quotes.add("map");
-        needs_quotes.add("list");
-        needs_quotes.add("udt");
-        needs_quotes.add("set");
 
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(table);
         query.append("(");
 
         StringJoiner sjfields = new StringJoiner(", ");
+        StringJoiner values = new StringJoiner(", ");
+
         for(Field f: fields) {
             sjfields.add(f.name);
         }
         query.append(sjfields.toString());
 
         query.append(") VALUES (");
+
+        for(int i = 0; i < record.size(); i++) {
+            String v = record.get(i);
+            Field f = fields.get(i);
+            if(needs_quotes.contains(f.type)) {
+                v = "'" + v.replace("'", "''") + "'";
+            }
+            values.add(v);
+        }
+
+        query.append(values.toString());
+
         query.append(")");
 
         return query.toString();
