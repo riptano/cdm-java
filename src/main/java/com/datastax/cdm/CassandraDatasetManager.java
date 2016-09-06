@@ -280,7 +280,6 @@ public class CassandraDatasetManager {
                                          record,
                                          fieldlist,
                                          types);
-                System.out.println(cql);
                 session.execute(cql);
             }
         }
