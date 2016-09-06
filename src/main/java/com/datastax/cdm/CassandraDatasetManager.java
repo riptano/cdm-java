@@ -20,6 +20,7 @@ import java.lang.StringBuilder;
 //import com.datastax.loader.CqlDelimLoadTask;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -34,6 +35,10 @@ public class CassandraDatasetManager {
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
     private Map<String, Dataset> datasets;
     private Session session;
+
+    CassandraDatasetManager() {
+
+    }
 
     CassandraDatasetManager(Map<String, Dataset> datasets) {
         this.datasets = datasets;
@@ -262,19 +267,19 @@ public class CassandraDatasetManager {
 
             HashMap types = new HashMap();
 
+            ArrayList<Field> fieldlist = new ArrayList<>();
+
             for(ColumnMetadata c: columns) {
                 fields.add(c.getName());
-                types.put(c.getName(), c.getType().getName().toString());
+                String ftype = c.getType().getName().toString();
+                types.put(c.getName(), ftype);
+                fieldlist.add(new Field(c.getName(), ftype));
             }
-
-            PreparedStatement p = session.prepare(insert_query.toString());
-            HashSet needs_quotes = new HashSet();
-            needs_quotes.add("text");
-            needs_quotes.add("datetime");
 
             for(CSVRecord record: records) {
                 // generate a CQL statement
-                String cql = generateCQL(record, types);
+                String cql = generateCQL(table, record,
+                                         fieldlist, types);
                 session.execute(cql);
             }
         }
@@ -289,8 +294,19 @@ public class CassandraDatasetManager {
         return records;
     }
 
-    String generateCQL(CSVRecord record, HashMap<String, String> types) {
-        return "";
+    String generateCQL(String table,
+                       CSVRecord record,
+                       ArrayList<Field> fields,
+                       HashMap<String, String> types) {
+
+        HashSet needs_quotes = new HashSet();
+        needs_quotes.add("text");
+        needs_quotes.add("datetime");
+
+        StringBuilder query = new StringBuilder("INSERT INTO ");
+        query.append(table);
+
+        return query.toString();
     }
 
     void update() throws IOException {
