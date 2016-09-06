@@ -12,6 +12,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.lib.RefUpdate;
 
 
 import javax.management.Query;
@@ -221,8 +222,8 @@ public class CassandraDatasetManager {
 
         Config config = mapper.readValue(configFile, Config.class);
 
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
         {
+            Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
             Session session = cluster.connect();
 
             StringBuilder createKeyspace = new StringBuilder();
@@ -233,6 +234,7 @@ public class CassandraDatasetManager {
             System.out.println(createKeyspace);
             session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
             session.execute(createKeyspace.toString());
+            cluster.close();
         }
 
         System.out.println("Schema: " + schema);
@@ -274,17 +276,35 @@ public class CassandraDatasetManager {
                 fieldlist.add(new Field(c.getName(), ftype));
             }
 
+            int totalComplete = 0;
+            List<ResultSetFuture> futures = new ArrayList<>();
             for(CSVRecord record: records) {
                 // generate a CQL statement
                 String cql = generateCQL(table,
                                          record,
                                          fieldlist,
                                          types);
-                session.execute(cql);
+
+                ResultSetFuture future = session.executeAsync(cql);
+                futures.add(future);
+                totalComplete++;
+                if(totalComplete % 100 == 0) {
+                    for (ResultSetFuture f : futures) {
+                        f.getUninterruptibly();
+                    }
+                    futures.clear();
+                }
+                System.out.print("Complete: " + totalComplete + "\r");
+
             }
+            for (ResultSetFuture f : futures) {
+                f.getUninterruptibly();
+            }
+            futures.clear();
+            System.out.println("Done importing " + table);
         }
 
-
+        cluster2.close();
         System.out.println("Loading data");
     }
 
@@ -300,6 +320,7 @@ public class CassandraDatasetManager {
                        HashMap<String, String> types) {
 
         HashSet needs_quotes = new HashSet();
+
         needs_quotes.add("text");
         needs_quotes.add("datetime");
 
@@ -322,6 +343,9 @@ public class CassandraDatasetManager {
             Field f = fields.get(i);
             if(needs_quotes.contains(f.type)) {
                 v = "'" + v.replace("'", "''") + "'";
+            }
+            if(v.trim().equals("")) {
+                v = "null";
             }
             values.add(v);
         }
