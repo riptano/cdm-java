@@ -225,10 +225,6 @@ public class CassandraDatasetManager {
         {
             Session session = cluster.connect();
 
-//        String createKeyspace = "DROP KEYSPACE IF EXISTS " + config.keyspace +
-//                                "; CREATE KEYSPACE " + config.keyspace +
-//                                " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}";
-
             StringBuilder createKeyspace = new StringBuilder();
             createKeyspace.append(" CREATE KEYSPACE ")
                     .append(config.keyspace)
@@ -250,6 +246,8 @@ public class CassandraDatasetManager {
                            .build();
 
         Session session = cluster2.connect(config.keyspace);
+
+        this.session = session;
 
         for(String table: config.tables) {
             String dataFile = dataPath + table + ".csv";
@@ -278,8 +276,10 @@ public class CassandraDatasetManager {
 
             for(CSVRecord record: records) {
                 // generate a CQL statement
-                String cql = generateCQL(table, record,
-                                         fieldlist, types);
+                String cql = generateCQL(table,
+                                         record,
+                                         fieldlist,
+                                         types);
                 session.execute(cql);
             }
         }
@@ -302,9 +302,23 @@ public class CassandraDatasetManager {
         HashSet needs_quotes = new HashSet();
         needs_quotes.add("text");
         needs_quotes.add("datetime");
+        needs_quotes.add("map");
+        needs_quotes.add("list");
+        needs_quotes.add("udt");
+        needs_quotes.add("set");
 
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(table);
+        query.append("(");
+
+        StringJoiner sjfields = new StringJoiner(", ");
+        for(Field f: fields) {
+            sjfields.add(f.name);
+        }
+        query.append(sjfields.toString());
+
+        query.append(") VALUES (");
+        query.append(")");
 
         return query.toString();
     }
