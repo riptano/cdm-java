@@ -10,7 +10,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.StringJoiner;
 
 /**
  * Created by jhaddad on 9/5/16.
@@ -34,8 +33,8 @@ public class CassandraDatasetManagerTest {
 
         String query = c.generateCQL("whatever",
                                      r,
-                                     fieldList,
-                                     types);
+                                     fieldList
+        );
         assertThat(query, containsString("INSERT INTO whatever(id, avg, cash, intmap, num, ts) VALUES"));
 
     }

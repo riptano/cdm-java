@@ -4,6 +4,7 @@ import com.datastax.driver.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.cli.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -12,18 +13,14 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
-import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.events.ListenerHandle;
 
 
-import javax.management.Query;
 import java.lang.StringBuilder;
 
 //import com.datastax.loader.CqlDelimLoadTask;
 
 import java.io.*;
-import java.lang.reflect.Array;
-import java.math.BigDecimal;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
@@ -282,24 +279,20 @@ public class CassandraDatasetManager {
                 // generate a CQL statement
                 String cql = generateCQL(table,
                                          record,
-                                         fieldlist,
-                                         types);
+                                         fieldlist
+                );
 
                 ResultSetFuture future = session.executeAsync(cql);
                 futures.add(future);
                 totalComplete++;
                 if(totalComplete % 100 == 0) {
-                    for (ResultSetFuture f : futures) {
-                        f.getUninterruptibly();
-                    }
+                    futures.forEach(ResultSetFuture::getUninterruptibly);
                     futures.clear();
                 }
                 System.out.print("Complete: " + totalComplete + "\r");
 
             }
-            for (ResultSetFuture f : futures) {
-                f.getUninterruptibly();
-            }
+            futures.forEach(ResultSetFuture::getUninterruptibly);
             futures.clear();
             System.out.println("Done importing " + table);
         }
@@ -310,14 +303,12 @@ public class CassandraDatasetManager {
 
     Iterable<CSVRecord> openCSV(String path) throws IOException {
         Reader in = new FileReader(path);
-        Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(in);
-        return records;
+        return CSVFormat.RFC4180.parse(in);
     }
 
     String generateCQL(String table,
                        CSVRecord record,
-                       ArrayList<Field> fields,
-                       HashMap<String, String> types) {
+                       ArrayList<Field> fields) {
 
         HashSet needs_quotes = new HashSet();
 
@@ -331,9 +322,7 @@ public class CassandraDatasetManager {
         StringJoiner sjfields = new StringJoiner(", ");
         StringJoiner values = new StringJoiner(", ");
 
-        for(Field f: fields) {
-            sjfields.add(f.name);
-        }
+        fields.forEach(f -> sjfields.add(f.name));
         query.append(sjfields.toString());
 
         query.append(") VALUES (");
@@ -373,7 +362,6 @@ public class CassandraDatasetManager {
         for(Map.Entry<String, Dataset> dataset : datasets.entrySet()) {
             System.out.println(dataset.getKey());
         }
-
     }
     void printHelp() {
         System.out.println("Put help here.");
