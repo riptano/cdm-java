@@ -14,3 +14,13 @@ create table maptest (
     m map<text, text>,
     primary key (id)
 );
+
+// Users keyed by id
+CREATE TABLE users2 (
+    userid uuid,
+    firstname text,
+    lastname text,
+    email text,
+    created_date timestamp,
+    PRIMARY KEY (userid)
+);

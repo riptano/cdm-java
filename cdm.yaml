@@ -3,4 +3,5 @@ tables:
     - users
     - alltypes
     - maptest
+    - users2
 version: 2.2
