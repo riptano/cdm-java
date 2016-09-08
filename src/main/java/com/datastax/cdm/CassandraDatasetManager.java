@@ -92,23 +92,26 @@ public class CassandraDatasetManager {
         }
 
         // connect to the cluster via the driver
+        switch (args[0]) {
+            case "install":
+                cdm.install(args[1]);
+                break;
+            case "list":
+                cdm.list();
+                break;
+            case "new":
+                cdm.new_dataset(args[1]);
+                break;
+            case "dump":
+                cdm.dump();
+                break;
+            case "update":
+                cdm.update();
+                break;
+            default:
+                System.out.println("Not sure what to do.");
 
-        if(args[0].equals("install")) {
-            cdm.install(args[1]);
-        } else if (args[0].equals("list")) {
-            cdm.list();
-        } else if (args[0].equals("new")) {
-            cdm.new_dataset(args[1]);
-        } else if (args[0].equals("dump")) {
-            cdm.dump();
-        } else if (args[0].equals("update")) {
-            cdm.update();
-        } else {
-            System.out.println("Not sure what to do.");
         }
-
-        // load data using cqlsh for now
-
         System.out.println("Finished.");
     }
 
@@ -232,6 +235,7 @@ public class CassandraDatasetManager {
             session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
             session.execute(createKeyspace.toString());
             cluster.close();
+
         }
 
         System.out.println("Schema: " + schema);
