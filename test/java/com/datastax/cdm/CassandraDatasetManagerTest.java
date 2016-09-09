@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
 
@@ -17,7 +18,7 @@ import java.util.HashMap;
 public class CassandraDatasetManagerTest {
 
     @Test
-    public void testCQLStatementGeneration() throws IOException {
+    public void testCQLStatementGeneration() throws IOException, CassandraDatasetManager.InvalidArgsException {
         CassandraDatasetManager c = new CassandraDatasetManager();
         Iterable<CSVRecord> records = c.openCSV("data/alltypes.csv");
         CSVRecord r = records.iterator().next();
@@ -36,6 +37,16 @@ public class CassandraDatasetManagerTest {
                                      fieldList
         );
         assertThat(query, containsString("INSERT INTO whatever(id, avg, cash, intmap, num, ts) VALUES"));
+
+    }
+
+    @Test
+    public void testCSVWeirdQuotes() throws IOException {
+        CassandraDatasetManager c = new CassandraDatasetManager();
+        CSVParser records = c.openCSV("data/users2.csv");
+        for (CSVRecord record : records) {
+
+        }
 
     }
 

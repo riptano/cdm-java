@@ -7,6 +7,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.cli.*;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
@@ -22,14 +23,19 @@ import java.lang.StringBuilder;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
  * Created by jhaddad on 6/29/16.
  */
 
+
 public class CassandraDatasetManager {
 
+    public class InvalidArgsException extends Exception {
+
+    }
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
     private Map<String, Dataset> datasets;
     private Session session;
@@ -49,11 +55,9 @@ public class CassandraDatasetManager {
 
         // check for the .cdm directory
         String home_dir = System.getProperty("user.home");
-//        System.out.println(home_dir);
         String cdm_path = home_dir + "/.cdm";
 
         File f = new File(cdm_path);
-//        System.out.println(f);
 
         f.mkdir();
 
@@ -64,8 +68,6 @@ public class CassandraDatasetManager {
             FileUtils.copyURLToFile(y, yaml);
         }
         // read in the YAML dataset list
-//        System.out.println("Loading Configuration YAML");
-
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
         // why extra work? Java Type Erasure will prevent type detection otherwise
@@ -73,7 +75,6 @@ public class CassandraDatasetManager {
 
         // debug: show all datasets no matter what
         CassandraDatasetManager cdm = new CassandraDatasetManager(data);
-
 
         // parse the CLI options
         Options options = new Options();
@@ -281,19 +282,23 @@ public class CassandraDatasetManager {
             List<ResultSetFuture> futures = new ArrayList<>();
             for(CSVRecord record: records) {
                 // generate a CQL statement
-                String cql = generateCQL(table,
-                                         record,
-                                         fieldlist
-                );
+                String cql = null;
+                try {
+                    cql = generateCQL(table, record, fieldlist);
 
-                ResultSetFuture future = session.executeAsync(cql);
-                futures.add(future);
-                totalComplete++;
-                if(totalComplete % 100 == 0) {
-                    futures.forEach(ResultSetFuture::getUninterruptibly);
-                    futures.clear();
+                    ResultSetFuture future = session.executeAsync(cql);
+                    futures.add(future);
+                    totalComplete++;
+                    if(totalComplete % 100 == 0) {
+                        futures.forEach(ResultSetFuture::getUninterruptibly);
+                        futures.clear();
+                    }
+                    System.out.print("Complete: " + totalComplete + "\r");
+
+                } catch (InvalidArgsException e) {
+                    e.printStackTrace();
+                    System.out.println(record);
                 }
-                System.out.print("Complete: " + totalComplete + "\r");
 
             }
             futures.forEach(ResultSetFuture::getUninterruptibly);
@@ -305,14 +310,15 @@ public class CassandraDatasetManager {
         System.out.println("Loading data");
     }
 
-    Iterable<CSVRecord> openCSV(String path) throws IOException {
-        Reader in = new FileReader(path);
-        return CSVFormat.RFC4180.parse(in);
+    CSVParser openCSV(String path) throws IOException {
+        File f = new File(path);
+        return CSVParser.parse(f, Charset.forName("UTF-8"),
+                               CSVFormat.RFC4180.withQuote(null));
     }
 
     String generateCQL(String table,
                        CSVRecord record,
-                       ArrayList<Field> fields) {
+                       ArrayList<Field> fields) throws InvalidArgsException {
 
         HashSet needs_quotes = new HashSet();
 
@@ -330,6 +336,8 @@ public class CassandraDatasetManager {
         query.append(sjfields.toString());
 
         query.append(") VALUES (");
+        if (record.size() != fields.size())
+            throw new InvalidArgsException();
 
         for(int i = 0; i < record.size(); i++) {
             String v = record.get(i);
