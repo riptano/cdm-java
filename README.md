@@ -10,6 +10,6 @@ You can build an executable via the following command:
 
 `src/main/sh/build_runnable.sh`
 
-This will create a JAR with a bash wrapper that you can drop in your $PATH and run like a normal Linux/Mac executable.
+This will create a JAR with a bash wrapper in the `bin` directory that you can drop in your $PATH and run like a normal Linux/Mac executable.  
 
 CDM doesn't currently work on windows as it's dependent on bash and cqlsh.  There are plans to lift this restriction.
