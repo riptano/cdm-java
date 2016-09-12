@@ -313,7 +313,7 @@ public class CassandraDatasetManager {
     CSVParser openCSV(String path) throws IOException {
         File f = new File(path);
         return CSVParser.parse(f, Charset.forName("UTF-8"),
-                               CSVFormat.RFC4180.withQuote(null));
+                               CSVFormat.RFC4180);
     }
 
     String generateCQL(String table,
