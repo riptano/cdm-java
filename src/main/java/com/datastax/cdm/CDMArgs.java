@@ -13,7 +13,7 @@ public class CDMArgs {
     @Parameter
     public List<String> command = new ArrayList<>();
 
-    @Parameter(names = "--host", description = "Hostname of node in cluster")
+    @Parameter(names = {"--host", "-h"}, description = "Hostname of node in cluster")
     public String host = "localhost";
 
 }
