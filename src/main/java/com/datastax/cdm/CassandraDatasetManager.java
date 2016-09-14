@@ -265,10 +265,6 @@ public class CassandraDatasetManager {
 
         System.out.println("Loading data");
 
-        Cluster cluster2 = Cluster.builder()
-                           .addContactPoint(address)
-                           .build();
-
 
         this.session = session;
 
@@ -277,7 +273,7 @@ public class CassandraDatasetManager {
             Iterable<CSVRecord> records = openCSV(dataFile);
 
             System.out.println("Importing " + table);
-            KeyspaceMetadata keyspaceMetadata = cluster2.getMetadata()
+            KeyspaceMetadata keyspaceMetadata = cluster.getMetadata()
                                                         .getKeyspace(config.keyspace);
             TableMetadata tableMetadata = keyspaceMetadata.getTable(table);
 
@@ -325,7 +321,7 @@ public class CassandraDatasetManager {
             System.out.println("Done importing " + table);
         }
 
-        cluster2.close();
+        cluster.close();
         System.out.println("Loading data");
     }
 
