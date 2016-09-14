@@ -1,31 +1,49 @@
 package com.datastax.cdm;
 
+import com.datastax.driver.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.cli.*;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
+import org.eclipse.jgit.events.ListenerHandle;
+
+
 import java.lang.StringBuilder;
 
 //import com.datastax.loader.CqlDelimLoadTask;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
+import java.nio.charset.Charset;
+import java.util.*;
 
 /**
  * Created by jhaddad on 6/29/16.
  */
 
+
 public class CassandraDatasetManager {
 
+    public class InvalidArgsException extends Exception {
+
+    }
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
     private Map<String, Dataset> datasets;
+    private Session session;
+    private String cassandraContactPoint;
+
+    CassandraDatasetManager() {
+
+    }
 
     CassandraDatasetManager(Map<String, Dataset> datasets) {
         this.datasets = datasets;
@@ -38,11 +56,9 @@ public class CassandraDatasetManager {
 
         // check for the .cdm directory
         String home_dir = System.getProperty("user.home");
-//        System.out.println(home_dir);
         String cdm_path = home_dir + "/.cdm";
 
         File f = new File(cdm_path);
-//        System.out.println(f);
 
         f.mkdir();
 
@@ -53,8 +69,6 @@ public class CassandraDatasetManager {
             FileUtils.copyURLToFile(y, yaml);
         }
         // read in the YAML dataset list
-//        System.out.println("Loading Configuration YAML");
-
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
         // why extra work? Java Type Erasure will prevent type detection otherwise
@@ -62,7 +76,6 @@ public class CassandraDatasetManager {
 
         // debug: show all datasets no matter what
         CassandraDatasetManager cdm = new CassandraDatasetManager(data);
-
 
         // parse the CLI options
         Options options = new Options();
@@ -80,22 +93,27 @@ public class CassandraDatasetManager {
             return;
         }
 
-        if(args[0].equals("install")) {
-            cdm.install(args[1]);
-        } else if (args[0].equals("list")) {
-            cdm.list();
-        } else if (args[0].equals("new")) {
-            cdm.new_dataset(args[1]);
-        } else if (args[0].equals("dump")) {
-            cdm.dump();
-        } else if (args[0].equals("update")) {
-            cdm.update();
-        } else {
-            System.out.println("Not sure what to do.");
+        // connect to the cluster via the driver
+        switch (args[0]) {
+            case "install":
+                cdm.install(args[1]);
+                break;
+            case "list":
+                cdm.list();
+                break;
+            case "new":
+                cdm.new_dataset(args[1]);
+                break;
+            case "dump":
+                cdm.dump();
+                break;
+            case "update":
+                cdm.update();
+                break;
+            default:
+                System.out.println("Not sure what to do.");
+
         }
-
-        // load data using cqlsh for now
-
         System.out.println("Finished.");
     }
 
@@ -106,13 +124,13 @@ public class CassandraDatasetManager {
         for(String table: config.tables) {
             StringBuilder command = new StringBuilder();
             command.append("cqlsh -k ")
-                    .append(config.keyspace)
-                    .append(" -e \"")
-                    .append("COPY ")
-                    .append(table)
-                    .append(" TO 'data/")
-                    .append(table)
-                    .append(".csv'\"");
+                   .append(config.keyspace)
+                   .append(" -e \"")
+                   .append("COPY ")
+                   .append(table)
+                   .append(" TO 'data/")
+                   .append(table)
+                   .append(".csv'\"");
             System.out.println(command);
             Runtime.getRuntime().exec(new String[]{"bash", "-c", command.toString()}).waitFor();
         }
@@ -205,14 +223,22 @@ public class CassandraDatasetManager {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
         Config config = mapper.readValue(configFile, Config.class);
+        String address = "127.0.0.1";
+        {
+            Cluster cluster = Cluster.builder().addContactPoint(address).build();
+            Session session = cluster.connect();
 
-        String createKeyspace = "cqlsh -e \"DROP KEYSPACE IF EXISTS " + config.keyspace +
-                                "; CREATE KEYSPACE " + config.keyspace +
-                                " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}\"";
+            StringBuilder createKeyspace = new StringBuilder();
+            createKeyspace.append(" CREATE KEYSPACE ")
+                    .append(config.keyspace)
+                    .append(" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
 
-        System.out.println(createKeyspace);
-        Runtime.getRuntime().exec(new String[]{"bash", "-c", createKeyspace}).waitFor();
+            System.out.println(createKeyspace);
+            session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
+            session.execute(createKeyspace.toString());
+            cluster.close();
 
+        }
 
         System.out.println("Schema: " + schema);
         String loadSchema = "cqlsh -k " + config.keyspace + " -f " + schema;
@@ -220,18 +246,119 @@ public class CassandraDatasetManager {
 
         System.out.println("Loading data");
 
+        Cluster cluster2 = Cluster.builder()
+                           .addContactPoint(address)
+                           .build();
+
+        Session session = cluster2.connect(config.keyspace);
+
+        this.session = session;
+
         for(String table: config.tables) {
             String dataFile = dataPath + table + ".csv";
-            String command = "COPY " + table + " FROM " + "'" + dataFile + "'";
-            String loadData= "cqlsh -k " + config.keyspace + " -e \"" + command + "\"";
-            System.out.println(loadData);
-            Runtime.getRuntime().exec(new String[]{"bash", "-c", loadData}).waitFor();
+            Iterable<CSVRecord> records = openCSV(dataFile);
+
+            System.out.println("Importing " + table);
+            KeyspaceMetadata keyspaceMetadata = cluster2.getMetadata()
+                                                        .getKeyspace(config.keyspace);
+            TableMetadata tableMetadata = keyspaceMetadata.getTable(table);
+
+            List<ColumnMetadata> columns = tableMetadata.getColumns();
+
+            StringJoiner fields = new StringJoiner(", ");
+            StringJoiner values = new StringJoiner(", ");
+
+            HashMap types = new HashMap();
+
+            ArrayList<Field> fieldlist = new ArrayList<>();
+
+            for(ColumnMetadata c: columns) {
+                fields.add(c.getName());
+                String ftype = c.getType().getName().toString();
+                types.put(c.getName(), ftype);
+                fieldlist.add(new Field(c.getName(), ftype));
+            }
+
+            int totalComplete = 0;
+            List<ResultSetFuture> futures = new ArrayList<>();
+            for(CSVRecord record: records) {
+                // generate a CQL statement
+                String cql = null;
+                try {
+                    cql = generateCQL(table, record, fieldlist);
+
+                    ResultSetFuture future = session.executeAsync(cql);
+                    futures.add(future);
+                    totalComplete++;
+                    if(totalComplete % 100 == 0) {
+                        futures.forEach(ResultSetFuture::getUninterruptibly);
+                        futures.clear();
+                    }
+                    System.out.print("Complete: " + totalComplete + "\r");
+
+                } catch (InvalidArgsException e) {
+                    e.printStackTrace();
+                    System.out.println(record);
+                }
+
+            }
+            futures.forEach(ResultSetFuture::getUninterruptibly);
+            futures.clear();
+            System.out.println("Done importing " + table);
         }
 
-
+        cluster2.close();
         System.out.println("Loading data");
     }
 
+    CSVParser openCSV(String path) throws IOException {
+        File f = new File(path);
+        return CSVParser.parse(f, Charset.forName("UTF-8"), CSVFormat.RFC4180.withEscape('\\'));
+    }
+
+    String generateCQL(String table,
+                       CSVRecord record,
+                       ArrayList<Field> fields) throws InvalidArgsException {
+
+        HashSet needs_quotes = new HashSet();
+
+        needs_quotes.add("text");
+        needs_quotes.add("datetime");
+        needs_quotes.add("timestamp");
+
+
+        StringBuilder query = new StringBuilder("INSERT INTO ");
+        query.append(table);
+        query.append("(");
+
+        StringJoiner sjfields = new StringJoiner(", ");
+        StringJoiner values = new StringJoiner(", ");
+
+        fields.forEach(f -> sjfields.add(f.name));
+        query.append(sjfields.toString());
+
+        query.append(") VALUES (");
+        if (record.size() != fields.size())
+            throw new InvalidArgsException();
+
+        for(int i = 0; i < record.size(); i++) {
+            String v = record.get(i);
+            Field f = fields.get(i);
+            if(needs_quotes.contains(f.type)) {
+                v = "'" + v.replace("'", "''") + "'";
+            }
+            if(v.trim().equals("")) {
+                v = "null";
+            }
+            values.add(v);
+        }
+
+        query.append(values.toString());
+
+        query.append(")");
+
+        return query.toString();
+    }
 
     void update() throws IOException {
         System.out.println("Updating datasets...");
@@ -249,7 +376,6 @@ public class CassandraDatasetManager {
         for(Map.Entry<String, Dataset> dataset : datasets.entrySet()) {
             System.out.println(dataset.getKey());
         }
-
     }
     void printHelp() {
         System.out.println("Put help here.");

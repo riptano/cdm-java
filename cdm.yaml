@@ -1,5 +1,7 @@
 keyspace: cdmtest
 tables:
     - users
-    - collection
+    - alltypes
+    - maptest
+    - users2
 version: 2.2
