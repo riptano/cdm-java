@@ -39,6 +39,7 @@ public class CassandraDatasetManager {
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
     private Map<String, Dataset> datasets;
     private Session session;
+    private String cassandraContactPoint;
 
     CassandraDatasetManager() {
 
@@ -224,7 +225,7 @@ public class CassandraDatasetManager {
         Config config = mapper.readValue(configFile, Config.class);
 
         {
-            Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+            Cluster cluster = Cluster.builder().addContactPoint("10.10.10.1").build();
             Session session = cluster.connect();
 
             StringBuilder createKeyspace = new StringBuilder();
@@ -246,7 +247,7 @@ public class CassandraDatasetManager {
         System.out.println("Loading data");
 
         Cluster cluster2 = Cluster.builder()
-                           .addContactPoint("127.0.0.1")
+                           .addContactPoint("10.10.10.1")
                            .build();
 
         Session session = cluster2.connect(config.keyspace);
@@ -312,8 +313,7 @@ public class CassandraDatasetManager {
 
     CSVParser openCSV(String path) throws IOException {
         File f = new File(path);
-        return CSVParser.parse(f, Charset.forName("UTF-8"),
-                               CSVFormat.RFC4180);
+        return CSVParser.parse(f, Charset.forName("UTF-8"), CSVFormat.RFC4180.withEscape('\\'));
     }
 
     String generateCQL(String table,
@@ -324,6 +324,8 @@ public class CassandraDatasetManager {
 
         needs_quotes.add("text");
         needs_quotes.add("datetime");
+        needs_quotes.add("timestamp");
+
 
         StringBuilder query = new StringBuilder("INSERT INTO ");
         query.append(table);
