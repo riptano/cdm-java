@@ -243,7 +243,9 @@ public class CassandraDatasetManager {
 
         System.out.println(createKeyspace);
         session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
+        Thread.sleep(2000);
         session.execute(createKeyspace.toString());
+
         session.execute("USE " + config.keyspace);
         
         System.out.println("Schema: " + schema);
@@ -252,6 +254,7 @@ public class CassandraDatasetManager {
         byte[] bytes = Files.readAllBytes(Paths.get(schema));
         String[] create_tables = new String(bytes).split(";");
         for(String c: create_tables) {
+            Thread.sleep(2000);
             String tmp = c.trim();
             if(tmp.length() > 0) {
                 session.execute(tmp);
