@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.commons.cli.*;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -60,7 +59,7 @@ public class CassandraDatasetManager {
     }
 
 
-    public static void main(String[] args) throws IOException, ParseException, InterruptedException, GitAPIException {
+    public static void main(String[] args) throws IOException, InterruptedException, GitAPIException {
 
         System.out.println("Starting CDM");
         CDMArgs parsedArgs = new CDMArgs();
