@@ -1,5 +1,6 @@
 package com.datastax.cdm;
 
+import com.beust.jcommander.JCommander;
 import com.datastax.driver.core.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +16,9 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.events.ListenerHandle;
+
+import com.beust.jcommander.Parameter;
+
 
 
 import java.lang.StringBuilder;
@@ -36,23 +40,32 @@ public class CassandraDatasetManager {
     public class InvalidArgsException extends Exception {
 
     }
+
+
     private static final String YAML_URI = "https://raw.githubusercontent.com/riptano/cdm-java/master/datasets.yaml";
     private Map<String, Dataset> datasets;
     private Session session;
     private String cassandraContactPoint;
+    private String host;
+
+
 
     CassandraDatasetManager() {
-
+        this.host = "localhost";
     }
 
-    CassandraDatasetManager(Map<String, Dataset> datasets) {
+    CassandraDatasetManager(String host, Map<String, Dataset> datasets) {
         this.datasets = datasets;
+        this.host = host;
     }
 
 
     public static void main(String[] args) throws IOException, ParseException, InterruptedException, GitAPIException {
 
         System.out.println("Starting CDM");
+        CDMArgs parsedArgs = new CDMArgs();
+        new JCommander(parsedArgs, args);
+
 
         // check for the .cdm directory
         String home_dir = System.getProperty("user.home");
@@ -75,13 +88,7 @@ public class CassandraDatasetManager {
         Map<String, Dataset> data = mapper.readValue(yaml, new TypeReference<Map<String, Dataset>>() {} );
 
         // debug: show all datasets no matter what
-        CassandraDatasetManager cdm = new CassandraDatasetManager(data);
-
-        // parse the CLI options
-        Options options = new Options();
-
-        CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options, args);
+        CassandraDatasetManager cdm = new CassandraDatasetManager(parsedArgs.host, data);
 
         // create a cluster and session
 
@@ -94,15 +101,15 @@ public class CassandraDatasetManager {
         }
 
         // connect to the cluster via the driver
-        switch (args[0]) {
+        switch (parsedArgs.command.get(0)) {
             case "install":
-                cdm.install(args[1]);
+                cdm.install(parsedArgs.command.get(1));
                 break;
             case "list":
                 cdm.list();
                 break;
             case "new":
-                cdm.new_dataset(args[1]);
+                cdm.new_dataset(parsedArgs.command.get(1));
                 break;
             case "dump":
                 cdm.dump();
@@ -223,7 +230,7 @@ public class CassandraDatasetManager {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
         Config config = mapper.readValue(configFile, Config.class);
-        String address = "127.0.0.1";
+        String address = this.host;
         {
             Cluster cluster = Cluster.builder().addContactPoint(address).build();
             Session session = cluster.connect();
