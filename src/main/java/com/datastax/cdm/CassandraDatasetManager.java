@@ -223,9 +223,9 @@ public class CassandraDatasetManager {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
         Config config = mapper.readValue(configFile, Config.class);
-
+        String address = "127.0.0.1";
         {
-            Cluster cluster = Cluster.builder().addContactPoint("10.10.10.1").build();
+            Cluster cluster = Cluster.builder().addContactPoint(address).build();
             Session session = cluster.connect();
 
             StringBuilder createKeyspace = new StringBuilder();
@@ -247,7 +247,7 @@ public class CassandraDatasetManager {
         System.out.println("Loading data");
 
         Cluster cluster2 = Cluster.builder()
-                           .addContactPoint("10.10.10.1")
+                           .addContactPoint(address)
                            .build();
 
         Session session = cluster2.connect(config.keyspace);
