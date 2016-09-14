@@ -27,6 +27,8 @@ import java.lang.StringBuilder;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -230,25 +232,33 @@ public class CassandraDatasetManager {
 
         Config config = mapper.readValue(configFile, Config.class);
         String address = this.host;
-        {
-            Cluster cluster = Cluster.builder().addContactPoint(address).build();
-            Session session = cluster.connect();
 
-            StringBuilder createKeyspace = new StringBuilder();
-            createKeyspace.append(" CREATE KEYSPACE ")
-                    .append(config.keyspace)
-                    .append(" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
+        Cluster cluster = Cluster.builder().addContactPoint(address).build();
+        Session session = cluster.connect();
 
-            System.out.println(createKeyspace);
-            session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
-            session.execute(createKeyspace.toString());
-            cluster.close();
+        StringBuilder createKeyspace = new StringBuilder();
+        createKeyspace.append(" CREATE KEYSPACE ")
+                .append(config.keyspace)
+                .append(" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
 
+        System.out.println(createKeyspace);
+        session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
+        session.execute(createKeyspace.toString());
+        session.execute("USE " + config.keyspace);
+        
+        System.out.println("Schema: " + schema);
+//        String loadSchema = "cqlsh -k " + config.keyspace + " -f " + schema;
+
+        byte[] bytes = Files.readAllBytes(Paths.get(schema));
+        String[] create_tables = new String(bytes).split(";");
+        for(String c: create_tables) {
+            String tmp = c.trim();
+            if(tmp.length() > 0) {
+                session.execute(tmp);
+            }
         }
 
-        System.out.println("Schema: " + schema);
-        String loadSchema = "cqlsh -k " + config.keyspace + " -f " + schema;
-        Runtime.getRuntime().exec(new String[]{"bash", "-c", loadSchema}).waitFor();
+//        Runtime.getRuntime().exec(new String[]{"bash", "-c", loadSchema}).waitFor();
 
         System.out.println("Loading data");
 
@@ -256,7 +266,6 @@ public class CassandraDatasetManager {
                            .addContactPoint(address)
                            .build();
 
-        Session session = cluster2.connect(config.keyspace);
 
         this.session = session;
 
