@@ -14,15 +14,8 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
-import org.eclipse.jgit.events.ListenerHandle;
-
-import com.beust.jcommander.Parameter;
-
-
 
 import java.lang.StringBuilder;
-
-//import com.datastax.loader.CqlDelimLoadTask;
 
 import java.io.*;
 import java.net.URL;
@@ -48,16 +41,22 @@ public class CassandraDatasetManager {
     private Session session;
     private String cassandraContactPoint;
     private String host;
-
+    private CDMArgs args;
 
 
     CassandraDatasetManager() {
+        String[] args = {};
+        CDMArgs parsedArgs = new CDMArgs();
+        new JCommander(parsedArgs, args);
+
         this.host = "localhost";
+        this.args = parsedArgs;
     }
 
-    CassandraDatasetManager(String host, Map<String, Dataset> datasets) {
+    CassandraDatasetManager(CDMArgs args, Map<String, Dataset> datasets) {
         this.datasets = datasets;
-        this.host = host;
+        this.host = args.host;
+        this.args = args;
     }
 
 
@@ -89,7 +88,7 @@ public class CassandraDatasetManager {
         Map<String, Dataset> data = mapper.readValue(yaml, new TypeReference<Map<String, Dataset>>() {} );
 
         // debug: show all datasets no matter what
-        CassandraDatasetManager cdm = new CassandraDatasetManager(parsedArgs.host, data);
+        CassandraDatasetManager cdm = new CassandraDatasetManager(parsedArgs, data);
 
         // create a cluster and session
 
@@ -236,14 +235,19 @@ public class CassandraDatasetManager {
         Cluster cluster = Cluster.builder().addContactPoint(address).build();
         Session session = cluster.connect();
 
+        Integer rf = this.args.rf;
         StringBuilder createKeyspace = new StringBuilder();
         createKeyspace.append(" CREATE KEYSPACE ")
                 .append(config.keyspace)
-                .append(" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}");
+                .append(" WITH replication = {'class': 'SimpleStrategy', 'replication_factor': ")
+                .append(rf)
+                .append("}");
 
-        System.out.println(createKeyspace);
+        System.out.println("Dropping keyspace");
         session.execute("DROP KEYSPACE IF EXISTS " + config.keyspace);
         Thread.sleep(2000);
+
+        System.out.println(createKeyspace);
         session.execute(createKeyspace.toString());
 
         session.execute("USE " + config.keyspace);
@@ -254,17 +258,16 @@ public class CassandraDatasetManager {
         byte[] bytes = Files.readAllBytes(Paths.get(schema));
         String[] create_tables = new String(bytes).split(";");
         for(String c: create_tables) {
+            System.out.println("Letting schema settle...");
             Thread.sleep(2000);
             String tmp = c.trim();
             if(tmp.length() > 0) {
+                System.out.println(tmp);
                 session.execute(tmp);
             }
         }
 
-//        Runtime.getRuntime().exec(new String[]{"bash", "-c", loadSchema}).waitFor();
-
         System.out.println("Loading data");
-
 
         this.session = session;
 

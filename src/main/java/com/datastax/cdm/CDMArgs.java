@@ -16,4 +16,7 @@ public class CDMArgs {
     @Parameter(names = {"--host", "-h"}, description = "Hostname of node in cluster")
     public String host = "localhost";
 
+    @Parameter(names = "--rf", description = "Replication Factor")
+    public Integer rf = 1;
+
 }
