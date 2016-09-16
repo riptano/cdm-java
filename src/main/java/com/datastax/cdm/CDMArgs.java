@@ -19,4 +19,7 @@ public class CDMArgs {
     @Parameter(names = "--rf", description = "Replication Factor")
     public Integer rf = 1;
 
+    @Parameter(names = {"--no-data", "--nodata"}, description = "Only set up schema")
+    public Boolean noData = false; // setting this is schema only
+
 }

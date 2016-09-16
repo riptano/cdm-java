@@ -267,6 +267,12 @@ public class CassandraDatasetManager {
             }
         }
 
+        // skip the data load
+        if(args.noData) {
+            System.out.println("Not loading up data, skipping");
+            cluster.close();
+            return;
+        }
         System.out.println("Loading data");
 
         this.session = session;
