@@ -6,7 +6,7 @@
 
     <groupId>com.datastax</groupId>
     <artifactId>cdm</artifactId>
-    <version>0.10</version>
+    <version>0.11</version>
 
     <dependencies>
 
