@@ -5,3 +5,4 @@ tables:
     - maptest
     - users2
 version: 2.2
+schema: schema.cql

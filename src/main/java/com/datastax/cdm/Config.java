@@ -9,4 +9,5 @@ public class Config {
     public String keyspace;
     public List<String> tables;
     public String version;
+    public String schema;
 }

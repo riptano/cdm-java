@@ -22,4 +22,8 @@ public class CDMArgs {
     @Parameter(names = {"--no-data", "--nodata"}, description = "Only set up schema")
     public Boolean noData = false; // setting this is schema only
 
+    @Parameter(names = "--help", help = true)
+    private boolean help;
+
+
 }

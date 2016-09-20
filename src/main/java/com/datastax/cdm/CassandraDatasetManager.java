@@ -42,6 +42,7 @@ public class CassandraDatasetManager {
     private String cassandraContactPoint;
     private String host;
     private CDMArgs args;
+    public String relative_schema_path = "schema.cql";
 
 
     CassandraDatasetManager() {
@@ -64,7 +65,7 @@ public class CassandraDatasetManager {
 
         System.out.println("Starting CDM");
         CDMArgs parsedArgs = new CDMArgs();
-        new JCommander(parsedArgs, args);
+        JCommander jc = new JCommander(parsedArgs, args);
 
 
         // check for the .cdm directory
@@ -97,6 +98,7 @@ public class CassandraDatasetManager {
         // load schema using cqlsh - should this use a normal CSV loader eventually?
         if(args.length == 0) {
             cdm.printHelp();
+            jc.usage();
             return;
         }
 
@@ -118,7 +120,8 @@ public class CassandraDatasetManager {
                 cdm.update();
                 break;
             default:
-                System.out.println("Not sure what to do.");
+                jc.usage();
+                cdm.printHelp();
 
         }
         System.out.println("Finished.");
@@ -221,7 +224,6 @@ public class CassandraDatasetManager {
         // all the paths
         dataPath = path + "/data/";
         configLocation = path + "/cdm.yaml";
-        schema = path + "/schema.cql";
 
         File configFile =  new File(configLocation);
 
@@ -230,6 +232,15 @@ public class CassandraDatasetManager {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
         Config config = mapper.readValue(configFile, Config.class);
+
+        if(config.schema != null) {
+            schema = path + "/" + config.schema;
+
+        }
+        else {
+            schema = path + "/schema.cql";
+        }
+        System.out.println("Loading schema from " + schema);
         String address = this.host;
 
         Cluster cluster = Cluster.builder().addContactPoint(address).build();
