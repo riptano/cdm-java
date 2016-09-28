@@ -5,7 +5,7 @@ movielens:
   maintainer: Jon Haddad
 
 killrvideo:
-  url: https://github.com/KillrVideo/killrvideo-data.git
+  url: https://github.com/KillrVideo/killrvideo-cdm.git
   description: Sample schmema for KillrVideo https://killrvideo.github.io
   maintainer: Patrick McFadin
 
